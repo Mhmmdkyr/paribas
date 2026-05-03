@@ -110,7 +110,7 @@ class MultiTimeframeEMABot:
         self._signal_count_hour: int = 0
         self._signal_long_count: int = 0
         self._signal_short_count: int = 0
-        self._last_report_hour: int = -1
+        self._last_report_hour: int = pd.Timestamp.now("UTC").hour
 
         self._load_symbol_filters()
 
@@ -531,9 +531,6 @@ class MultiTimeframeEMABot:
             self._signal_long_count += 1
         if short_signal:
             self._signal_short_count += 1
-
-        if self._last_report_hour == -1:
-            self._last_report_hour = current_hour
 
         if current_hour != self._last_report_hour:
             pos_text = "Yok"
