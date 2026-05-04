@@ -635,6 +635,10 @@ class MultiTimeframeEMABot:
             self.manage_open_position()
 
     def open_position(self, side: str):
+        if self.position is not None:
+            logging.warning("Pozisyon zaten açık, yeni emir engellendi. (double order koruması)")
+            return
+
         m5 = self.frames[self.config.m5]
         curr = m5.iloc[-1]
         entry_price = float(curr["close"])
