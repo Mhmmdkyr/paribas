@@ -110,7 +110,8 @@ class MultiTimeframeEMABot:
         self._signal_count_hour: int = 0
         self._signal_long_count: int = 0
         self._signal_short_count: int = 0
-        self._last_report_hour: int = pd.Timestamp.now("UTC").hour
+        _now = pd.Timestamp.now("UTC")
+        self._last_report_hour: int = _now.hour if _now.minute < 10 else (_now.hour + 1) % 24
 
         self._load_symbol_filters()
 
@@ -1085,15 +1086,42 @@ class MultiTimeframeEMABot:
             sys.exit(1)
 
 
+PID_FILE = Path(__file__).parent / "bot.pid"
+
+
+def _acquire_pid_lock():
+    if PID_FILE.exists():
+        try:
+            existing_pid = int(PID_FILE.read_text().strip())
+            import psutil
+            if psutil.pid_exists(existing_pid):
+                print(f"Bot zaten çalışıyor (PID={existing_pid}). Çıkılıyor.")
+                sys.exit(0)
+        except Exception:
+            pass
+    PID_FILE.write_text(str(os.getpid()))
+
+
+def _release_pid_lock():
+    try:
+        PID_FILE.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
 
-    config = BotConfig()
-    bot = MultiTimeframeEMABot(config)
-    bot.run()
+    _acquire_pid_lock()
+    try:
+        config = BotConfig()
+        bot = MultiTimeframeEMABot(config)
+        bot.run()
+    finally:
+        _release_pid_lock()
 
 
 if __name__ == "__main__":
